@@ -1,0 +1,540 @@
+\documentclass[12pt]{article} % use 12pt font
+\usepackage{fontspec} % table layout
+\usepackage{sectsty} % section headings
+\usepackage{booktabs} % table layout
+\usepackage[hidelinks]{hyperref} % hyperlinks
+\usepackage{subcaption} % floats that span multiple pages
+\usepackage{placeins}
+
+%%%%%
+% left-align title material
+\makeatletter
+\renewcommand{\maketitle}{\bgroup\setlength{\parindent}{0pt}
+\begin{flushleft}
+  \LARGE{\textsf{\textbf{\@title}}}
+  \@author
+\end{flushleft}
+\egroup
+}
+\makeatother
+%%%%%
+
+%%%%% Setting up table and caption environment
+\usepackage{floatrow} % san-serif font for tabular material
+\floatsetup[table]{font={sf, small},%
+                    captionskip=0pt,% no space between tables and captions                                       
+                    postcode=captionskip,% 
+                    capposition=top,% place caption above tables
+                    footskip=-10pt,% no space between tables and notes
+                    footposition=bottom} % place notes below tables
+\floatsetup[figure]{font={sf, small},%
+                    captionskip=0pt,% no space between figure and captions                                       
+                    postcode=captionskip,% 
+                    capposition=bottom,% place caption below figures
+                    footskip=0pt,% no space between tables and notes
+                    footposition=bottom} % place notes below figures
+                    
+\setlength{\tabcolsep}{3pt}
+                    
+\usepackage[font=sf,% san-serif font for float captions
+               skip=0pt,% no space between captions and floats
+               labelfont=bf,% caption lable (ie "Table 1") in bold face
+               justification=justified,% left-justify captions
+               singlelinecheck=false]{caption} %
+
+\captionsetup{footfont=sf,skip=0pt} % no space between notes and table
+
+% Set width of text
+\textwidth = 5in  % 5in text column 
+
+% define serif and san-serif fonts
+\allsectionsfont{\sffamily} % section headings in san-serif font
+\setromanfont{Goudy Old Style} % serif font to be Goudy Old Style
+\setsansfont{Tw Cen MT} % san-serif font to be Tw Cen MT
+
+% Control number layout
+\usepackage{siunitx}
+\sisetup{
+    group-digits=true, % group digits 
+    group-separator={,}, % separate groups with comma
+    group-minimum-digits={3}, % starting with the thousands place
+    table-figures-decimal = 1, 
+    round-mode=places,
+    round-precision=1, % round decimals to one decimal place by default
+    detect-all = true, % set numbers in same font as surrounding font
+    mode = text
+}
+
+% Set float placement parameters
+\renewcommand{\textfraction}{0.05}
+\renewcommand{\topfraction}{0.8}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\floatpagefraction}{0.75}
+
+<<loadData, eval = TRUE, echo = FALSE>>=
+#load(".RData") # load most recent version of analysis
+@
+
+\begin{document}
+
+\title{Designated Housing: \linebreak The First 20 Years}
+\maketitle
+
+\vspace*{3\baselineskip} % skip three lines
+
+In 1994, Regulation 24 CFR 945 gave public housing authorities the flexibility to designate units within projects as elderly-only, disabled-only, or mixed.\footnote{\emph{Elderly households} are those with one or more members 62 or older. \emph{Disabled households} are those with one or more members with a "self-care or independent living limitation". Both elderly and disabled households may include a non-elderly (resp. non-disabled) member if they provide needed assistance to the elderly (resp. disabled) member.} Since then, \num{\Sexpr{phas.designated}} authorities have designated \num{\Sexpr{units.designated}} housing units, \num{\Sexpr{units.designated.pct}}\% of the total public housing stock.
+
+This report looks at how housing authorities have utilized 24 CFR 945 over the last two decades. We compare authorities that have and have not designated housing by size, fiscal and physical rating, demographics, geography, access to employment and healthcare, as well as their ability to meet local demand for affordable housing. We find that authorities with designated units are larger, more urban, and serve a more racially diverse population. They meet their local housing demand at least as well as authorities without designated units, despite their location in higher-demand areas. Finally, we look at trends in designation and affordable housing demand. Since 1994, the vast majority of units have been designated elderly, even though the demand for affordable housing for the disabled has grown the fastest since 2000.  
+
+\section*{Designated Units, PHA Size, and Demographics}
+\FloatBarrier
+Public housing is the most prominent affordable housing program in the United States. Created with the Housing Act of 1937, public housing authorities expanded through the mid-20th century, reaching a peak of 1.4 million units in 1994. Since then, public housing has declined, as Federal housing policy has shifted toward voucher programs such as Section 8, and private, subsidized housing such as the Low Income Housing Tax Credit program \cite{hsgPolicy}. Today, \num{\Sexpr{total.pha}} public housing authorities account for \num{\Sexpr{units.total.pha}} units, \num{\Sexpr{units.pha.pct}}\% of the total U.S. stock of affordable housing.\footnote{Total authorities reflect the number of records in the HUD Assisted Housing Properties database \cite{HUD2012a}. The HUD Residential Characteristics Report data includes records for approximately 3,100 authorities, and HUD refers to 3,300 authorities on its assisted propertes database website \cite{HUD2012b}. We use the assisted properities database despite its smaller size because it enables spatial analysis and contains more extensive PHA attributes, such as financial status.}
+
+Public housing authorities (PHAs) vary greatly in size, from the three-unit Delray Beach Housing Authority in Florida to the 180,000-unit New York City Housing Authority, the nation's largest. While public housing is often associated with large, elevator-tower housing complexes, fully 46\% of PHAs have fewer than 100 units under management, as seen in Table~\ref{phaBySize}. Over 87\% manage fewer than 500 units. Only 10 authorities have over 7,500 units, but they comprise over a quarter of all public housing units \cite{HUD2012a}.
+
+\begin{table}
+\caption{Public Housing Authorities by Size}
+\label{phaBySize}
+<<phaBySize, cache=FALSE, eval=TRUE, echo = FALSE, dev = 'cairo_pdf', results='asis', fig.width = textwidth, fig.height = .75*textwidth, warning=FALSE>>=
+df = prettyTable(phaBySize, counts = 2:3, pcts = 4:5, digits = 1)
+write.csv(df, paste(tablesFolder, "phaBySize.csv"))
+lc=ncol(df)
+phaBySizeLaTex <-
+  latex(df,
+        file = "",
+        title = "",
+        booktabs=TRUE,
+        table.env=FALSE,
+        col.just= rep("r",lc),
+        rowlabel = NULL, 
+        colheads = c("",
+                     "\\parbox{1in}{\\raggedleft Number of \\par Authorities\\strut}",
+                     "\\parbox{1in}{\\raggedleft Total \\par Units\\strut}",
+                     "\\parbox{1in}{\\raggedleft\\% Total \\par Authorities\\strut}",
+                     "\\parbox{0.75in}{\\raggedleft\\% Total \\par Units\\strut}"),
+        colnamesTexCmd = "bfseries")
+@
+\floatfoot{Source: \href{http://www.huduser.org//portal//datasets//gis//spatial.html}{\cite{HUD2012a}}. Table layout adapted from \cite{hsgPolicy}. Size categories are from \cite{Sard}.}
+\end{table}
+
+Residents of the largest PHAs reflect the relative diversity of the major metropolitan areas where they are located. The largest PHAs, those with more than 7,500 units, have 10\% more Black residents than public housing overall, and fully 20\% more Hispanic residents, as seen in Table~\ref{race.df2}. Meanwhile, nearly three-quarters of the residents of the smallest PHAs are White, although Whites make up less than half of all public housing residents.
+
+\begin{table}
+\caption{Public Housing Authorities by Race and Size}
+\label{race.df2}
+<<race.df2, cache=FALSE, eval=TRUE, echo = FALSE, dev = 'cairo_pdf', results='asis', fig.width = textwidth, fig.height = .75*textwidth, warning=FALSE>>=
+df = prettyTable(race.df2, pcts = 1:ncol(race.df2), digits = 1)
+write.csv(df, paste(tablesFolder, "phaByRace.csv"))
+lc=ncol(df)
+race.df2LaTex <-
+  latex(df,
+        file = "",
+        title = "",
+        booktabs=TRUE,
+        table.env=FALSE,
+        col.just= rep("r",lc),
+        rowlabel = NULL, 
+        colheads = c("",
+                     "\\parbox{.7in}{\\raggedleft White \\par Only\\strut}",
+                     "\\parbox{.7in}{\\raggedleft Black \\par Only\\strut}",
+                     "\\parbox{.7in}{\\raggedleft Asian \\par Only\\strut}",
+                     "\\parbox{.7in}{\\raggedleft AI/AN \\par Only\\strut}",
+                     "\\parbox{.7in}{\\raggedleft Hispanic\\strut}"),
+        colnamesTexCmd = "bfseries")
+@
+\floatfoot{AI/AN is American Indian Or Alaskan Native Only. Hispanic population can be of any race. Source: \href{http://www.huduser.org//portal//datasets//gis//spatial.html}{\cite{HUD2012a}} and \href{https://pic.hud.gov/pic/RCRPublic/rcrmain.asp}{\cite{HUD2012b}}.}
+\end{table}
+
+The application process to designate housing is non-trivial. PHAs must identify and consult with key stakeholders, hold at least one public meeting, conduct a needs assessment, and devise a plan for accomodating households that will not occupy the designated units. PHAs must already have a HUD-approved allocation plan, and if they wish to designate units as disabled-only, they must also have an approved supportive-service plan. Since PHAs will only apply for and implement dedicated housing plans if they have the capacity to do so, we expect to see a higher rate of dedicated units in larger PHAs. Table~\ref{tPlanStatusBySize} confirms this. The percent of authorities who have active dedication plans increases with size, from less than 1\% of the smallest authorities to more than 40\% of authorities with over 3,000 units.\footnote{HUD classifies plans as Active or Expired \cite{HUD2013a}. Because of concerns with the quality of expired plan data, we only identify PHAs with active designation programs. All other PHAs are identified as None.}
+
+\begin{table}
+\caption{Designated Units By PHA Size}
+\label{tPlanStatusBySize}
+<<tPlanStatusBySize, cache=FALSE, eval=TRUE, echo = FALSE, dev = 'cairo_pdf', results='asis', fig.width = textwidth, fig.height = .75*textwidth, warning=FALSE>>=
+df = prettyTable(tPlanStatusBySize,
+                 counts = 3:5,
+                 pcts = c(1:2),
+                 digits = 1)
+write.csv(df, paste(tablesFolder, "phaBySizeAndPlanStatus.csv"))
+lc=ncol(df)
+
+tPlanStatusBySizeLaTex <-
+  latex(df,
+        file = "",
+        title = "",
+        booktabs=TRUE,
+        table.env=FALSE,
+        n.cgroup = c(2,3),
+        cgroup = c("PHAs by Plan Status",
+                   "Designated Units By Type"),
+        col.just= rep("r",lc),
+        colheads = c("Active", "None",
+                     "Elderly","Disabled","Mixed"))
+@
+\floatfoot{Source: \href{http://www.huduser.org//portal//datasets//gis//spatial.html}{\cite{HUD2012a}}, \href{https://pic.hud.gov/pic/RCRPublic/rcrmain.asp}{\cite{HUD2012b}}, and \cite{HUD2013a}.}
+\label{fig:tPlanStatusBySize}
+\end{table}
+
+Applying for and implementing a dedicated housing plan costs money. In a time of diminishing resources, forgone maintenance, postponed capital improvements, and reduced operating subsidies from Washington, we expect only those PHAs in sound fiscal health to take on additional costs.  Table~\ref{phaByFin} suggests this is not necessarily the case. High and standard performing authorities are no more likely to have active programs. At 57\%, authorities rated as Advisory are actually the most likely to have active plans, though we cannot conclude anything from this given the small number of such authorities. 
+
+\begin{table}
+\caption{Plan Status By Financial and Physical Rating}
+\label{phaByFin}
+<<phaByFin, cache=FALSE, eval=TRUE, echo = FALSE, dev = 'cairo_pdf', results='asis', fig.width = textwidth, fig.height = .75*textwidth, warning=FALSE>>=
+df = prettyTable(phaByFin, counts = 1:2, pcts = 3:4, digits = 1)
+write.csv(df, paste(tablesFolder, "phaByFinancialAndPlanStatus.csv"))
+lc=ncol(df)
+phaBySizeLaTex <-
+  latex(df,
+        file = "",
+        title = "",
+        booktabs=TRUE,
+        table.env=FALSE,
+        col.just= rep("r",lc),
+        rowlabel = NULL, 
+        colheads = c("",
+                     "\\parbox{0.75in}{\\raggedleft Number of \\par Authorities\\strut}",
+                     "\\parbox{0.5in}{\\raggedleft Total \\par Units\\strut}",
+                     "Active",
+                     "None"),
+        colnamesTexCmd = "bfseries")
+@
+\floatfoot{Source: \href{http://www.huduser.org//portal//datasets//gis//spatial.html}{\cite{HUD2012a}} and \href{https://pic.hud.gov/pic/RCRPublic/rcrmain.asp}{\cite{HUD2012b}}.}
+\end{table}
+
+The geographic distribution of PHAs depends, in part, on the program. Elderly-only programs generally reflect the overall distribution of housing authorities, with a concentration in large metro areas, as noted above. Disabled and mixed housing, however, is heavily concentrated in the Northeast, as shown in Figure~\ref{phaLocation}. Only one authority west of the Mississippi River has units designated for disabled use, and only one has mixed units. 
+
+\begin{figure}
+\makebox[\linewidth][c]{%
+    \begin{subfigure}[b]{.7\textwidth}
+    \centering
+        \includegraphics[width=.95\textwidth]{K:/DataServices/Projects/Current_Projects/HIA/HUD/data/spatial/assisted_housing/output/pha_units_total}
+    \end{subfigure}
+    \begin{subfigure}[b]{.7\textwidth}
+    \centering
+        \includegraphics[width=.95\textwidth]{K:/DataServices/Projects/Current_Projects/HIA/HUD/data/spatial/assisted_housing/output/pha_units_elderly}
+    \end{subfigure}
+}
+\makebox[\linewidth][c]{%
+    \begin{subfigure}[b]{.7\textwidth}
+    \centering
+        \includegraphics[width=.95\textwidth]{K:/DataServices/Projects/Current_Projects/HIA/HUD/data/spatial/assisted_housing/output/pha_units_disabled}
+    \end{subfigure}
+    \begin{subfigure}[b]{.7\textwidth}
+    \centering
+        \includegraphics[width=.95\textwidth]{K:/DataServices/Projects/Current_Projects/HIA/HUD/data/spatial/assisted_housing/output/pha_units_mixed}
+    \end{subfigure}
+    \caption{Location of Designated Units by Program Type.}
+    \label{phaLocation}
+}
+\floatfoot{Maps show active designation programs. Source: \href{http://www.huduser.org//portal//datasets//gis//spatial.html}{\cite{HUD2012a}} and \href{https://pic.hud.gov/pic/RCRPublic/rcrmain.asp}{\cite{HUD2012b}}.}
+\end{figure}
+
+\section*{PHAs In Context}
+
+When comparing PHAs with and without designated units, it is important to also compare the landscapes of affordable housing and supportive features in which they operate. As seen above, authorities with designated units are generally larger and more urban. As a result, they are nearby other affordable housing opportunities, and they are located in neighborhoods with greater access to transit, employment, and health care.
+
+PHAs with designated programs are closer to a greater number of units in other affordable housing programs, including Section 202 units for elderly households, and section 811 units for disabled residents, as seen in Table~\ref{dfFinal}. PHAs with dedicated units are also near a greater number of multi-family assistance programs, such as Low Income Housing Tax Credit projects, and Section 8 Project-Based and Tenant-Based vouchers.
+
+\begin{table}
+<<dfFinal, cache=FALSE, eval=TRUE, echo = FALSE, dev = 'cairo_pdf', results='asis', fig.width = textwidth, fig.height = .75*textwidth, warning=FALSE>>=
+df = prettyTable(dfFinal, counts = 1:8)
+write.csv(df, paste(tablesFolder, "assistedUnitsFromOtherProgramsByPlanStatus.csv"))
+lc = ncol(df)
+dfFinalLaTex <-
+  latex(df,
+        file = "",
+        title = "",
+        booktabs=TRUE,
+        table.env=FALSE,
+        col.just = rep("r",lc),
+        cgroup = c("PHA", "202/811", "Multi-Family", "HCV"),
+        rowname = c("Active", "None"),
+        colheads = rep(c("Total", "Mean"), 4))
+@
+\caption{Assisted Units From Other Programs By Plan Status.}
+\floatfoot{Shows unit totals and county-level means for units in PHAs, units in Section 202/811 programs, and units in multi-family assistance programs. Multi-family includes 202/811 as a subset, in addition to Section 8 Project Based Assistance. Source: \href{http://www.huduser.org//portal//datasets//gis//spatial.html}{\cite{HUD2012a}} and \href{https://pic.hud.gov/pic/RCRPublic/rcrmain.asp}{\cite{HUD2012b}}.}
+\label{dfFinal}
+\end{table}
+
+Designated programs are also in neighborhoods with more supportive features for elderly and disabled residents. They are closer to transit, with more than 25\% in Census block groups with population centroids within 100 meters of a transit station, as seen in Figure~\ref{distToTransitNone} \cite{EPA2013}.\footnote{A block group consists of clusters of blocks within the same census tract, and typically contains between 600 and 3,000 people.} Half are within three-quarters of a mile from a transit stop, compared to just 14\% of PHAs without designated units. Combined with the greater number of employment opportunities in urban areas, this means that residents in PHAs with designated units have significantly greater access to jobs via transit. At the median, there are over 18,000 transit-accessible jobs from PHAs with designated units, compared to just over 7,000 jobs from PHAs without \cite{EPA2013}.\footnote{A job is \emph{transit-accessible} if it can be reached via transit within 45 minutes one-way.} Job density is also higher in areas immediatly surrounding PHAs with designated units. At the median, designated PHAs are located in block groups with \Sexpr{round(jobDensityActive, 1)} jobs per household, more than twice the job density than in block groups with non-designated PHAs.
+
+\begin{figure}
+\caption{Transit and Employment Access}
+<<distToTransitNone, cache=FALSE, eval=TRUE, echo = FALSE, dev = 'cairo_pdf', fig.width = 1.25*textwidth, fig.height = .75*textwidth, warning=FALSE>>=
+grid.arrange(distToTransitActive,
+             distToTransitNone,
+             jobAccessByTransitActive,
+             jobAccessByTransitNone,
+             ncol = 2,
+             nrow = 2)
+ExportPlot(grid.arrange(distToTransitActive,
+             distToTransitNone,
+             jobAccessByTransitActive,
+             jobAccessByTransitNone,
+             ncol = 2,
+             nrow = 2),
+           "distToTransitAndJobAccess",
+           height = 4)
+
+@
+\floatfoot{Top: Percent of PHAs with (Left) and without (Right) active designation plans by distance from nearest transit stop to the population centroid of the block group that contains the PHA. Distances greater than three-quarters of a mile are excluded. Bottom: Percent of PHAs by number of jobs accessible by public transit within 45 minutes. Source: \cite{HUD2012a} and \href{http://www.epa.gov/smartgrowth/smartlocationdatabase.htm}{\cite{EPA2013}}.}
+\label{distToTransitNone}
+\end{figure}
+
+Elderly and disabled residents of PHAs with designated units also have access to more pedestrian-friendly road networks. The median density of pedestrian-oriented roadway per square mile in block groups with designated PHAs is \Sexpr{round(pedRoadDensityActive, 1)}, versus \Sexpr{round(pedRoadDensityNone, 1)} in block groups with non-designated PHAs \cite{EPA2013}. As a result, residents of designated PHAs have more access to infrastructure that supports non-motorized forms of transportation, such as walking and biking.
+
+In addition to their proximity to other affordable housing and employment resources, designated PHAs are also closer to affordabe health services, such as community health centers (CHCs).  Fully \Sexpr{round(noCHCNonePct, 1)}\% of PHAs without designated units are located in counties with no CHCs, versus \Sexpr{round(noCHCActivePct, 1)}\% of PHAs with designated units. At the median, there are \Sexpr{round(median.chcCountyLevelActive, 1)} CHCs in counties with designated PHAs, more than eight times the number in counties with non-designated CHCs \cite{HRSA2013}.
+
+\begin{figure}
+\caption{Access to Community Health Centers}
+<<chcCountyLevelActive, cache=FALSE, eval=TRUE, echo = FALSE, dev = 'cairo_pdf', fig.width = 1.25*textwidth, fig.height = .5*.75*textwidth, warning=FALSE>>=
+grid.arrange(chcCountyLevelActive,
+             chcCountyLevelNone,
+             ncol = 2,
+             nrow = 1)
+
+ExportPlot(grid.arrange(chcCountyLevelActive,
+             chcCountyLevelNone,
+             ncol = 2,
+             nrow = 1),
+           "chcCountyLevel",
+           height = 2)
+@
+\floatfoot{Percent of PHAs with (Left) and without (Right) active designation plans by number of community health centers located in the same county. Source: \href{http://datawarehouse.hrsa.gov/}{HRSA 2013}}
+\label{chcCountyLevelActive}
+\end{figure}
+
+While PHAs with dedicated units have access to more supportive neighborhood features, they are also located in areas with higher crime rates, as seen in Figure~\ref{crimeCountyLevelActive}. The median county-level violent crime rate among dedicated PHAs is \Sexpr{round(activeVlntCrime, 0)} per 100,00 residents, versus \Sexpr{round(noneVlntCrime, 0)} for non-dedicated PHAs. The property crime rate is also higher, at \Sexpr{round(activePrptyCrime, 0)} and \Sexpr{round(nonePrptyCrime, 0)} incidents per 100,000 residents for designated and non-designated PHAs, respectively \cite{DoJ2011a}.
+
+\begin{figure}
+\caption{Violent and Property Crime}
+<<crimeCountyLevelActive, cache=FALSE, eval=TRUE, echo = FALSE, dev = 'cairo_pdf', fig.width = 1.25*textwidth, fig.height = .75*textwidth, warning=FALSE>>=
+grid.arrange(activeVlntCrime.g,
+             noneVlntCrime.g,
+             activePrptyCrime.g,
+             nonePrptyCrime.g,
+             ncol = 2,
+             nrow = 2)
+
+ExportPlot(grid.arrange(activeVlntCrime.g,
+             noneVlntCrime.g,
+             activePrptyCrime.g,
+             nonePrptyCrime.g,
+             ncol = 2,
+             nrow = 2),
+           "vlntCrime",
+           height = 4)
+@
+\floatfoot{Percent of PHAs with (Left) and without (Right) active designation plans by violent crime rate (Top) and property crime rate (Bottom) per 100,000 residents. Source: \cite{DoJ2011a}}
+\label{crimeCountyLevelActive}
+\end{figure}
+
+
+\section*{Designated Units, Supply and Demand}
+
+PHAs with designated units tend to be in higher-demand markets. Over 56\% of authorities with designated units are located in qualified census tracts, compared to 30\% of those without designated units.\footnote{Qualified census tracts are those in which at least half of the households have incomes that are less than 60 percent of the area median income or have a poverty rate of at least 25 percent \cite{HUD2013b}.} In addition, \Sexpr{round(activeREPovPct, 1)}\% of PHAs with designated units are in tracts that qualify as areas of racially or ethnically concentrated poverty, nearly five times the rate for PHAs without designated units.\footnote{Racially/Ethnically Concentrated Areas of Poverty are defined as census tracts with a family poverty rate either above 40\% OR above 300\% of the metro area tract average, and a majority non-White population \cite{HUD2013c}.} As Table~\ref{hpEldDis} shows, however, all authorities face similar rates of housing need among the elderly and disabled after controlling for household income. Over 70\% of exremely low income elderly households in counties with PHAs of any kind face housing problems.\footnote{Extremely low income households are those making less than 30\% of Area Median Income (AMI) Very low income households have incomes from 30 to 50\% of AMI, and low income households make between 50 and 80\% AMI.} Among extremely low income households with a disability, the rates approach 80\%. At somewhat higher incomes, elderly and disabled households in counties with designation progams are more likely to face housing problems than those in counties without, suggesting that designation status may reflect increased demand among designees.     
+
+
+
+
+\begin{table}
+\caption{Prevalence of Housing Problems by Income As Percent AMI}
+\label{hpEldDis}
+<<hpEldDis, cache=FALSE, eval=TRUE, echo = FALSE, dev = 'cairo_pdf', results='asis', fig.width = textwidth, fig.height = .75*textwidth, warning=FALSE>>=
+df = prettyTable(hp_disT, pcts = 1:ncol(hp_disT), digits = 1)
+write.csv(df, paste(tablesFolder, "hpElderlyAndDisabledByPlanStatus.csv"))
+lc=ncol(df)
+hpEldDisLaTex <-
+  latex(df,
+        file = "",
+        title = "",
+        booktabs=TRUE,
+        table.env=FALSE,
+        n.cgroup = rep(3,2),
+        cgroup = c("Elderly",
+                   "Disabled"),
+        col.just= rep("r",lc),
+        colheads = rep(c("< 30\\%", "30-50\\%", "50-80\\%"),
+                       2),
+        rowname = c("Active", "None"))
+@
+\floatfoot{Shows the percent of elderly and disabled households with housing problems by income in counties that contain PHAs with and without active plans. Source: \cite{HUD2011a}.}
+\label{hpEldDis}
+\end{table}
+
+Estimating the degree to which PHAs meet demand for subsidized housing is not straightforward. Data on housing need from the Comprehensive Housing Assessment Strategy is available at Census-defined areas, such as tracts and counties, which do not correspond to PHA service areas. In addition, PHAs with and without designated units can be located in the same county or even tract, making it difficult to differentiate demand by designation status.
+
+We define demand at the county level as the number of extremely low income elderly (resp. disabled) households that face a housing problem.\footnote{Housing problems include, in diminishing order of importance: 1) housing unit lacks complete kitchen facilities; 2) housing unit lacks complete plumbing facilities; 3) household is overcrowded; and 4) household is cost burdened. A household that faces one or more of these is said to have a housing problem. Data on elderly and disabled households do not allow us to distinguish among these problems.} While higher income households can qualify for public housing, the Quality Housing and Work Responsibility Act of 1998 mandated that at least 40\% of households admitted into public housing have incomes below 30\% AMI, so these households are a good proxy for demand. As we see shortly, the vast majority public housing authorities fail to meet even the demand from this subset of households. 
+
+We measure how well public housing supply meets demand in two ways. The first compares the total number of elderly/disabled households in public housing at the county level to the total county-level demand for affordable elderly/disabled housing, respectively. The second compares the proportion of elderly/disabled households in public housing to the proportion of elderly/disabled households among all extremely low income households with housing problems. The first is a measure of how large the stock of public housing is compared to need. The second measures how closely the demographics of households in public housing reflect the demographics of households in need.
+
+To implement the first measure, we first recognize that PHAs may play different, and sometimes specialized, roles in meeting local housing needs. Some PHAs may specialize in providing elderly housing, while others focus on disabled households or families with children. With this in mind, we define the \emph{residual demand} that a PHA faces as the total demand for housing at the county-level minus the total supply of housing from all other PHAs in the same county. For example, if PHAs 1 and 2 are both located in County C, and PHA 1 has five eldery units and County C has 20 elderly households in need of housing, then PHA 2 faces a residual demand of 15 elderly housing units. We expect that PHAs with elderly or disabled designated housing to meet a greater proportion of their residual need. 
+
+Households with disabilities tend to benefit the most from designation programs. As seen in Figure~\ref{eldResidDemandNone}, more than 30\% of PHAs without disabled-designated units meet less than 10\% of their residual demand, compared to fewer than 30\% of PHAs with disabled-designated units, and fewer than 20\% of PHAs with mixed-unit designations. On average, PHAs without designated housing for disabled households meet \num{\Sexpr{disResidDemandNone.mean}}\% of demand, while those with disabled and mixed designated housing meet \num{\Sexpr{disResidDemandDisabeld.mean}}\% and \num{\Sexpr{disResidDemandMixed.mean}}\% of demand, respectively. 
+
+Results for elderly demand are more equivocal. PHAs without designation programs meet \num{\Sexpr{eldResidDemandNone.mean}}\% of demand on average, while those with designated units meet \num{\Sexpr{eldResidDemandElderly.mean}}\%. PHAs with mixed programs, however, meet \num{\Sexpr{eldResidDemandMixed.mean}}\% of residual elderly demand, on average. As we saw above, however, PHAs with designated units tend to face higher demand, so even "breaking even" with designation-free PHAs may be a sign of program effectiveness.   
+
+\begin{figure}
+\caption{Elderly/Disabled Demand and Supply By Designated Plan Status}
+<<eldResidDemandNone, cache=FALSE, eval=TRUE, echo = FALSE, dev = 'cairo_pdf', fig.width = 1.25*textwidth, fig.height = .75*textwidth, warning=FALSE>>=
+grid.arrange(eldResidDemandEldery,
+             eldResidDemandMixed,
+             disResidDemandNone,
+             disResidDemandDisabled,
+             disResidDemandMixed,
+             disResidDemandNone,
+             ncol = 3, nrow = 2)
+
+ExportPlot(grid.arrange(eldResidDemandEldery,
+             eldResidDemandMixed,
+             disResidDemandNone,
+             disResidDemandDisabled,
+             disResidDemandMixed,
+             disResidDemandNone,
+             ncol = 3, nrow = 2),
+           "residDemandElderlyDisabled",
+           height = 4)
+
+@
+\floatfoot{Percent of Residual Demand for Elderly housing (Top) and Disabled housing (Bottom) that has been met by PHAs with actively designated elderly/disabled units (Left), with actively designated mixed units (Middle), and with no actively designated units (Right). Source: \href{http://www.huduser.org//portal//datasets//gis//spatial.html}{\cite{HUD2012a}} and \cite{HUD2011a}.}
+\label{eldResidDemandNone}
+\end{figure}
+
+Even when target populations are well-served by dedicated housing, it is worthwhile to test whether or not these programs "crowd-out" other households that may have to compete for a smaller share of non-designated units. Here we test this with respect to Black and Hispanic households.\footnote{Of course, Black, Hispanic, elderly, and disabled are not mutually exclusive categories. This section may also be interpreted as testing whether or not designation programs disproportionately benefit non-Black and non-Hispanic households.} As Figure~\ref{aaResidDemandNone} shows, Black households enjoy much better access to affordable housing in PHAs with designated housing programs. PHAs without designated units meet \num{\Sexpr{aa_resid_demand_pct_metNone.mean}}\% of demand from Black households, on average, whereas PHAs with programs meet \num{\Sexpr{aa_resid_demand_pct_metPlan.mean}}\% of demand. Hispanic households, however, are poorly served regardless of PHA status. PHAs without designated programs meet only \num{\Sexpr{hisp_resid_demand_pct_metNone.mean}}\% of demand from Hispanic households. Those with designated units meet a paltry \num{\Sexpr{hisp_resid_demand_pct_metPlan.mean}}\% of demand.
+
+
+\begin{figure}
+\caption{Black/Hispanic Demand and Supply By Designated Plan Status}
+<<aaResidDemandNone, cache=FALSE, eval=TRUE, echo = FALSE, dev = 'cairo_pdf', fig.width = 1.25*textwidth, fig.height = .75*textwidth, warning=FALSE>>=
+grid.arrange(aaResidDemandPlan,
+             aaResidDemandNone,
+             hispResidDemandPlan,
+             hispResidDemandNone,
+             ncol = 2,
+             nrow = 2)
+
+ExportPlot(grid.arrange(aaResidDemandPlan,
+             aaResidDemandNone,
+             hispResidDemandPlan,
+             hispResidDemandNone,
+             ncol = 2,
+             nrow = 2),
+           "residDemandBlackHispanic",
+           height = 4)
+
+@
+\floatfoot{Percent of Residual Demand from Black (Top) and Hispanic (Bottom) households that has been met by PHAs with active designated housing plans (Left) and without active designated housing (Right). Source: \cite{HUD2012a} and \cite{HUD2012b}}.
+\label{aaResidDemandNone}
+\end{figure}
+
+Another way to measure public housing supply is to compare the proportion of public housing units that are elderly/disabled-occupied to the proportion of extremely low income households with housing problems that are elderly/disabled. We are only interested here in how this balance depends on the existence of designated units that serve these population, not on what this balance "should" be. Figure~\ref{EphaEdemand} shows the proportion of units in each PHA that are elderly-occupied (Left) and disabled-occupied (Right) versus the proportion of the extremely low income households with housing problems that belong to each of these groups. If you draw an imaginary 45$^\circ$ line through each plot, then PHAs located above the line house a higher proportion of the elderly/disabled population than exist among all extremely low income households with housing problems. Among PHAs with and without elderly-designated housing, \num{\Sexpr{eldOverRepPlan}}\% and \num{\Sexpr{eldOverRepNone}}\% are above the line, respectively. Among PHAs with and without disabled-designated housing, \num{\Sexpr{disOverRepPlan}}\% and \num{\Sexpr{disOverRepNone}}\% are above the line, respectively.
+
+\begin{figure}
+<<EphaEdemand, cache=FALSE, eval=TRUE, echo = FALSE, dev = 'cairo_pdf', fig.width = 1.25*textwidth, fig.height = .75*textwidth, warning=FALSE>>=
+grid.arrange(EphaEdemand,DphaDdemand, ncol = 2)
+
+ExportPlot(grid.arrange(EphaEdemand,DphaDdemand, ncol = 2),
+           "phaDemandSupply",
+           height = 4)
+@
+\caption{Proportion of supply versus Proportion of demand}
+\floatfoot{PHAs with designation programs are shown in black. Those without are in grey. Size corresponds to total units in PHA. Largest dot corresponds to New York City. Source: \cite{HUD2012a} and \cite{HUD2011a}.}
+\label{EphaEdemand}
+\end{figure}
+
+
+\section*{Trends in Designation and Demand}
+Elderly-designated units account for \num{\Sexpr{units.designated.elderly.pct}}\% of all designated units, compared to \num{\Sexpr{units.designated.disabled.pct}}\% and \num{\Sexpr{units.designated.mixed.pct}}\% of units designated disabled and mixed, respectively. As Figure~\ref{ePctDesUnits} shows, elderly-designated units also account for a larger share of total PHA elderly-occupied units as compared to units designated disabled. That is, elderly PHA households are more likely to live in a designated unit.
+
+\begin{figure}
+<<ePctDesUnits, cache=FALSE, eval=TRUE, echo = FALSE, dev = 'cairo_pdf', fig.width = 1.25*textwidth, fig.height = .5*.75*textwidth, warning=FALSE>>=
+grid.arrange(ePctDesUnits,dPctDesUnits,ncol = 2)
+ExportPlot(grid.arrange(ePctDesUnits,dPctDesUnits,ncol = 2),
+           "pctDesignatedUnits",
+           height = 2)
+@
+\caption{Designated Units As Percent of Demand Source: \href{http://www.huduser.org//portal//datasets//gis//spatial.html}{HUD 2012}}
+\floatfoot{Shows elderly (Left) and disabled (Right) designated units as percent of total elderly/disabled-occupied units in PHAs. Source: \cite{HUD2012a}.}
+\label{ePctDesUnits}
+\end{figure}
+
+The prevalence of elderly-designated units has been consistent over the last twenty years, as seen in Figure~\ref{desByTime}. Each year from 1994 to 2000, elderly-designated units made up over 99\% of all designated housing. In 2004, however, a spike in total designated units corresponded with a relative increase in disabled- and mixed-designated units to 8.0\% and 4.9\% of all designated units, respectively. Units designated disabled and mixed continued to make up a growing share of designated units until reaching of peak of 30.6\% of all designated units in 2010. In recent years, their share has fallen back to pre-2004 levels. 
+
+\begin{figure}
+<<desByTime, cache=FALSE, eval=TRUE, echo = FALSE, dev = 'cairo_pdf', fig.width = textwidth, fig.height = .75*textwidth, warning=FALSE>>=
+grid.arrange(desByTime,desPropByTime,nrow = 2)
+@
+\caption{Designation Over Time}
+\floatfoot{Total Number (Top) and Proportion (Bottom) of designated public housing for Elderly (Light Blue), Disabled (Middle), and Mixed (Dark Blue). Source: \cite{HUD2012a} and \cite{HUD2013a}.}
+\label{desByTime}
+\end{figure}
+
+Supply is only meaningful in relation to demand. From Figure~\ref{demandByTime}, we see that demand for subsidized housing among both elderly and disabled households has increased across the United States over the last decade. Among elderly households, the percent that are extremely low income with housing problems has increased in all regions except the southeast. In New York and California, the rates have increased over 60\%. 
+
+Comparing housing needs among disabled households is more problematic. At first blush, the map to the right in Figure~\ref{demandByTime} is startling, suggesting a dramatic increase in demand. In 2007-2008, however, HUD changed its definition of disabled households, and cautions against comparing demand over time. The apparent precipitous increase in demand may therefore be an artifact of how disabiled households are defined. More work is needed in this area.
+
+\begin{figure}
+\makebox[\linewidth][c]{%
+    \begin{subfigure}[b]{.7\textwidth}
+    \centering
+        \includegraphics[width=.95\textwidth]{K:/DataServices/Projects/Current_Projects/HIA/HUD/data/spatial/assisted_housing/output/ederlyChange}
+    \end{subfigure}
+    \begin{subfigure}[b]{.7\textwidth}
+    \centering
+        \includegraphics[width=.95\textwidth]{K:/DataServices/Projects/Current_Projects/HIA/HUD/data/spatial/assisted_housing/output/disabledChange}
+    \end{subfigure}
+}
+\caption{Percent Change in Percent of Elderly (Left) and Disabled (Right) Households That Are Extremely Low Income With Housing Problem}
+\floatfoot{Source: \cite{HUD2000a}, \cite{HUD2011a}, and \cite{HUD2011b}.}
+\label{demandByTime}
+\end{figure}
+
+\FloatBarrier % Keep bibliography from floating up
+
+\begin{thebibliography}{9}
+
+\bibitem{hsgPolicy}
+Schwartz, Alex. 2010. \emph{Housing Policy In The United States}. 2nd Edition. New York: Routledge. 
+
+\bibitem{HUD2012a}
+HUD (U.S. Department of Housing and Urban Development). 2012. Geospatial Data and Map Services: Assisted Housing Properties as of November 2, 2013 (database). http://www.huduser.org/portal/datasets/gis/spatial.html.
+  
+\bibitem{HUD2012b}
+HUD (U.S. Department of Housing and Urban Development). 2012. Residential Characteristics Report as of November 2, 2013 (database). https://pic.hud.gov/pic/RCRPublic/rcrmain.aspl.
+  
+\bibitem{HUD2000a}
+HUD (U.S. Department of Housing and Urban Development). 2000. Comprehensive Housing Assessment Strategy as of November 2, 2013 (database). http://www.huduser.org/portal/datasets/cp.html.
+     
+     
+\bibitem{HUD2011a}
+HUD (U.S. Department of Housing and Urban Development). 2006-2010. Comprehensive Housing Assessment Strategy as of November 2, 2013 (database). http://www.huduser.org/portal/datasets/cp.html.
+   
+\bibitem{HUD2011b}
+HUD (U.S. Department of Housing and Urban Development). 2008-2010. Comprehensive Housing Assessment Strategy as of November 2, 2013 (database). http://www.huduser.org/portal/datasets/cp.html. 
+
+\bibitem{HUD2013a}
+HUD (U.S. Department of Housing and Urban Development). 2013. Dedicated Housing Tracking Report as of November 2, 2013 (database). http://portal.hud.gov/hudportal/documents.
+
+\bibitem{HUD2013b}
+HUD (U.S. Department of Housing and Urban Development). 2013. Qualified Census Tracts and Difficult Development Areas as of November 2, 2013 (database). http://www.huduser.org/portal/datasets/qct.html.
+
+\bibitem{HUD2013c}
+HUD (U.S. Department of Housing and Urban Development). 2013. Racially/Ethnically Concentrated Areas of Poverty as of January 21, 2014 (database). http://egis.hud.gov/ArcGIS/rest/services/affht/RcapEcap/MapServer.
+  
+\bibitem{EPA2013}
+EPA (Environmental Protection Agency) 2013. Smart Location Database as of January 4, 2014 (database). http://www.epa.gov/smartgrowth/smartlocationdatabase.htm.
+  
+\bibitem{Sard}
+Sard, B., \& W. Fischer. 2008. \emph{Preserving Safe, high-quality public housing shoud be a priority of housing policy}. Washington, DC: Center on Budget and Policy Priorities. http://www.cbpp.org/files/9-18-08hous.pdf.
+
+\bibitem{HRSA2013}
+HRSA (U.S. Department of Health and Human Services) 2013. Health Resources and Services Administration Data Warehouse as of January 4, 2014 (database). http://datawarehouse.hrsa.gov/.
+
+\bibitem{DoJ2011a}
+United States Department of Justice. Office of Justice Programs. Federal Bureau of Investigation. Uniform Crime Reporting Program Data: County-Level Detailed Arrest and Offense Data, 2011. ICPSR34582-v1. Ann Arbor, MI: Inter-university Consortium for Political and Social Research [distributor], 2013-12-18. doi:10.3886/ICPSR34582.v1
+
+
+\end{thebibliography}
+
+\end{document}
